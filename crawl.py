@@ -87,7 +87,6 @@ def start_crawl(_dict):
         start=start,
         end=end,
     )
-
     with open(fname, "w", newline="", encoding="utf-8") as f:
         file = csv.writer(f, delimiter=",", quotechar='"', quoting=csv.QUOTE_ALL)
         # head
@@ -100,6 +99,10 @@ def start_crawl(_dict):
             if tmp != page_rows:
                 file.writerows(page_rows)
                 tmp = page_rows
+    print("file: {} done".format(fname))
+    # wirte finished file
+    with open("done.txt", "a", encoding="utf-8") as done:
+        done.write(fname + "\n")
 
 
 # create data set
@@ -206,5 +209,5 @@ def setSearchList():
 
 if __name__ == "__main__":
     search_list = setSearchList()
-    pool = Pool(processes=4)
+    pool = Pool(processes=8)
     pool.map(start_crawl, search_list)
