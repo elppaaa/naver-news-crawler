@@ -8,7 +8,7 @@ import csv
 import datetime
 import time
 import os
-
+import sys
 
 headers = {
     "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_1_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.1 Mobile/15E148 Safari/604.1",
@@ -74,6 +74,9 @@ def get_news_category(soup):
 
 
 def crawl_inpage(_link):
+    date = ""
+    text = ""
+    category = ""
     # select_one error
     try:
         tmp = requests.get(_link, headers=headers)
@@ -160,15 +163,22 @@ def setSearchList():
         449,
         215,
     ]
-    KEYWORD = input("키워드 입력 : ")
-    STARTDATE = list(map(int, input("시작 날짜 입력 예) 2020 1 31:   ").split(" ")))
-    start_date = datetime.date(STARTDATE[0], STARTDATE[1], STARTDATE[2])
+    if len(sys.argv) == 5:
+        KEYWORD = sys.argv[1]
+        STARTDATE = sys.argv[2]
+        ENDDATE = sys.argv[3]
+        DAYS = int(sys.argv[4])
+    else:
+        KEYWORD = input("키워드 입력 : ")
+        STARTDATE = input("시작 날짜 입력 예) 20200131:  ")
+        ENDDATE = input("종료 날짜 입력 예) 20200131:  ")
+        # 몇일 단위로 쪼개어 검색할지.
+        DAYS = int(input("몇일치씩 다운로드 할까요? : "))
 
-    ENDDATE = list(map(int, input("종료 날짜 입력 예) 2020 3 4:   ").split(" ")))
-    end_date = datetime.date(ENDDATE[0], ENDDATE[1], ENDDATE[2])
-
-    # 몇일 단위로 쪼개어 검색할지.
-    DAYS = int(input("몇일치씩 다운로드 할까요? : "))
+    start_date = datetime.date(
+        int(STARTDATE[0:4]), int(STARTDATE[4:6]), int(STARTDATE[6:])
+    )
+    end_date = datetime.date(int(ENDDATE[0:4]), int(ENDDATE[4:6]), int(ENDDATE[6:]))
 
     arr = []
     date = start_date
