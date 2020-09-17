@@ -7,13 +7,28 @@ from multiprocessing import Pool
 import csv
 import datetime
 import time
+import os
+
 
 headers = {
     "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_1_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.1 Mobile/15E148 Safari/604.1",
-    # "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    # "host": "m.search.naver.com",
-    # "referer": "https://m.news.naver.com/search.nhn?searchType=issue",
+    "authority": "news.naver.com",
+    "cache-control": "max-age=0",
+    "upgrade-insecure-requests": "1",
+    "dnt": "1",
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+    "accept-encoding": "gzip, deflate, br",
+    "accept-language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7,la;q=0.6,da;q=0.5",
 }
+
+DONEFILE = "done.txt"
+
+if os.path.isfile(DONEFILE):
+    with open(DONEFILE, "r", encoding="utf-8") as done:
+        done_list = done.readlines()
+    done_list = [_t.replace("\n", "") for _t in done_list]
+else:
+    done_list = []
 
 
 # 뉴스 검색 결과 한페이지 정보 수집
@@ -59,18 +74,26 @@ def get_news_category(soup):
 
 
 def crawl_inpage(_link):
-    tmp = requests.get(_link, headers=headers)
-    soup = bs4(tmp.text, "html.parser")
-    date = soup.select_one("div.media_end_head_info div  span")["data-date-time"]
-    text = soup.select_one("div#dic_area").text
-    text = text.replace("\n", "")
-    category = get_news_category(soup)
-    return date, text, category
+    # select_one error
+    try:
+        tmp = requests.get(_link, headers=headers)
+        soup = bs4(tmp.text, "html.parser")
+        # date = soup.select_one("div.media_end_head_info div  span")["data-date-time"]
+        date = soup.select_one("span._ARTICLE_DATE_TIME")["data-date-time"]
+        text = soup.select_one("div#dic_area").text
+        text = text.replace("\n", "")
+        category = get_news_category(soup)
+    except AttributeError:
+        for _i in [date, text, category]:
+            if _i == None:
+                _i = "None"
+    finally:
+        return date, text, category
 
 
 def start_crawl(_dict):
+    global done_list
     baseurl = "https://m.search.naver.com/search.naver?where=m_news&query={keyword}&sm=mtb_tnw&sort=0&photo=0&field=0&pd=3&ds={org_start}&de={org_end}&docid=&related=0&mynews=1&office_type=1&office_section_code=1&news_office_checked=1{press}&nso=so%3Ar%2Cp%3Afrom{start}to{end}"
-
     keyword = _dict["keyword"]
     org_start = _dict["start"]
     org_end = _dict["end"]
@@ -87,6 +110,10 @@ def start_crawl(_dict):
         start=start,
         end=end,
     )
+
+    if fname in done_list:
+        return
+
     with open(fname, "w", newline="", encoding="utf-8") as f:
         file = csv.writer(f, delimiter=",", quotechar='"', quoting=csv.QUOTE_ALL)
         # head
@@ -99,9 +126,9 @@ def start_crawl(_dict):
             if tmp != page_rows:
                 file.writerows(page_rows)
                 tmp = page_rows
-    print("file: {} done".format(fname))
+    print("file: '{}' done".format(fname))
     # wirte finished file
-    with open("done.txt", "a", encoding="utf-8") as done:
+    with open(DONEFILE, "a", encoding="utf-8") as done:
         done.write(fname + "\n")
 
 
