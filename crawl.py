@@ -83,7 +83,7 @@ def crawl_inpage(_link):
         text = soup.select_one("div#dic_area").text
         text = text.replace("\n", "")
         category = get_news_category(soup)
-    except AttributeError:
+    except:
         for _i in [date, text, category]:
             if _i == None:
                 _i = "None"
@@ -159,54 +159,6 @@ def setSearchList():
         422,
         449,
         215,
-        9,
-        8,
-        11,
-        277,
-        18,
-        366,
-        123,
-        14,
-        15,
-        16,
-        92,
-        79,
-        629,
-        119,
-        138,
-        29,
-        417,
-        6,
-        293,
-        31,
-        47,
-        30,
-        2,
-        24,
-        308,
-        586,
-        262,
-        94,
-        243,
-        33,
-        37,
-        53,
-        353,
-        36,
-        50,
-        127,
-        607,
-        584,
-        310,
-        7,
-        152,
-        640,
-        44,
-        296,
-        346,
-        87,
-        88,
-        82,
     ]
     KEYWORD = input("키워드 입력 : ")
     STARTDATE = list(map(int, input("시작 날짜 입력 예) 2020 1 31:   ").split(" ")))
@@ -220,11 +172,11 @@ def setSearchList():
 
     arr = []
     date = start_date
-    while True:
-        if date > end_date:
-            break
+    while date <= end_date:
         start = str(date).replace("-", ".")
         date += datetime.timedelta(days=DAYS - 1)
+        if date > end_date:
+            date = end_date
         end = str(date).replace("-", ".")
         date += datetime.timedelta(days=1)
         for press in press_num_list:
