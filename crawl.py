@@ -220,11 +220,11 @@ def setSearchList():
 
     arr = []
     date = start_date
-    while True:
-        if date > end_date:
-            break
+    while date <= end_date:
         start = str(date).replace("-", ".")
         date += datetime.timedelta(days=DAYS - 1)
+        if date > end_date:
+            date = end_date
         end = str(date).replace("-", ".")
         date += datetime.timedelta(days=1)
         for press in press_num_list:
