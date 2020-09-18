@@ -86,9 +86,9 @@ def crawl_inpage(_link):
         text = soup.select_one("div#dic_area").text
         text = text.replace("\n", "")
         category = get_news_category(soup)
-    except:
+    except AttributeError:
         for _i in [date, text, category]:
-            if _i == None:
+            if _i == "":
                 _i = "None"
     finally:
         return date, text, category
