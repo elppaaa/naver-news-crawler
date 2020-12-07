@@ -1,5 +1,7 @@
 # coding: utf-8
 
+
+# 필요한 패키지 설치
 import requests
 from bs4 import BeautifulSoup as bs4
 from multiprocessing import Pool
@@ -10,6 +12,7 @@ import time
 import os
 import sys
 
+# request 보낼 시에 사용할 헤더 미리 생성함.
 headers = {
     "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 13_1_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.1 Mobile/15E148 Safari/604.1",
     "authority": "news.naver.com",
@@ -21,6 +24,8 @@ headers = {
     "accept-language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7,la;q=0.6,da;q=0.5",
 }
 
+# 프로그램 실행 도중 중단을 대비하여 완료된 파일 저장.
+# done.txt에 있는 파일은 다시 동일 내용 실행 시에도 중복으로 수행되지 않음.
 DONEFILE = "done.txt"
 
 if os.path.isfile(DONEFILE):
@@ -52,7 +57,7 @@ def crawl_whole_search_page(link):
     return tmp
 
 
-# 뉴스 정보 반환
+# 뉴스 기사 파싱하는 코드
 def crawl_news(_news):
     if "네이버뉴스" in str(_news.select_one("div.news_info")):
         title = _news.select_one("div.api_txt_lines").text
@@ -65,7 +70,7 @@ def crawl_news(_news):
         return None
 
 
-# for category crawl error
+# 연예 카테고리가 DOM 구조가 다른 경우를 위해 애러 처리함.
 def get_news_category(soup):
     try:
         return soup.select_one("em.media_end_categorize_item").text
@@ -73,11 +78,12 @@ def get_news_category(soup):
         return "연예"
 
 
+#뉴스 기사 페이지를 파싱함.
 def crawl_inpage(_link):
     date = ""
     text = ""
     category = ""
-    # select_one error
+    # DOM 구조가 다를 경우를 대비해 예외처리
     try:
         tmp = requests.get(_link, headers=headers)
         soup = bs4(tmp.text, "html.parser")
@@ -94,6 +100,7 @@ def crawl_inpage(_link):
         return date, text, category
 
 
+# 파싱할 날짜, 키워드, 기간, 언론사가 포함된 딕셔너리 파일을 기준으로 파싱 수행.
 def start_crawl(_dict):
     global done_list
     baseurl = "https://m.search.naver.com/search.naver?where=m_news&query={keyword}&sm=mtb_tnw&sort=0&photo=0&field=0&pd=3&ds={org_start}&de={org_end}&docid=&related=0&mynews=1&office_type=1&office_section_code=1&news_office_checked=1{press}&nso=so%3Ar%2Cp%3Afrom{start}to{end}"
@@ -117,26 +124,28 @@ def start_crawl(_dict):
     if fname in done_list:
         return
 
+    # 파일에 저장
     with open(fname, "w", newline="", encoding="utf-8") as f:
         file = csv.writer(f, delimiter=",", quotechar='"', quoting=csv.QUOTE_ALL)
-        # head
+        # header
         file.writerow(["title", "date", "category", "text", "press", "link"])
         tmp = ""
         for page in range(267):
             url = n_url + "&start=" + str(page * 15 + 1)
             page_rows = crawl_whole_search_page(url)
-            # 중복기록최소화
+            # 중복기록최소화를 위해 이전과 동일한 기사인 경우 저장하지 않음
             if tmp != page_rows:
                 file.writerows(page_rows)
                 tmp = page_rows
     print("file: '{}' done".format(fname))
-    # wirte finished file
+    # 파싱 내용 저장 완료후 저장함 
     with open(DONEFILE, "a", encoding="utf-8") as done:
         done.write(fname + "\n")
 
 
-# create data set
+# 파싱할 목록 생성 
 def setSearchList():
+    # 사용할 언론사 고유 번호
     press_num_list = [
         32,
         5,
@@ -163,6 +172,8 @@ def setSearchList():
         449,
         215,
     ]
+    
+    # commandline 지원
     if len(sys.argv) == 5:
         KEYWORD = sys.argv[1]
         STARTDATE = sys.argv[2]
@@ -180,6 +191,7 @@ def setSearchList():
     )
     end_date = datetime.date(int(ENDDATE[0:4]), int(ENDDATE[4:6]), int(ENDDATE[6:]))
 
+    # 입력받은 기간과, 키워드를 기준으로 DAYS 단위로 딕셔너리 생성.
     arr = []
     date = start_date
     while date <= end_date:
@@ -196,6 +208,7 @@ def setSearchList():
     return arr
 
 
+# main 메서드
 if __name__ == "__main__":
     search_list = setSearchList()
     pool = Pool(processes=8)
